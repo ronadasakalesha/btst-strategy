@@ -82,13 +82,17 @@ class BTSTStrategy:
         if candle2['close'] <= candle1['close']:
             return False, None
         
-        # Check location: Near lower Bollinger Band
+        # Check location: AT lower Bollinger Band (candle must touch or cross the band)
         if pd.isna(candle2['bb_lower']):
             return False, None
         
-        distance_from_lower = abs(candle2['close'] - candle2['bb_lower']) / candle2['close']
-        if distance_from_lower > self.bb_proximity:
-            # Not near lower band
+        # Candle 2 must touch or go below the lower band
+        if candle2['low'] > candle2['bb_lower']:
+            # Didn't touch the lower band
+            return False, None
+        
+        # Check volume: Candle 2 volume must be greater than Candle 1 volume
+        if candle2['volume'] <= candle1['volume']:
             return False, None
         
         # Valid buy setup found
@@ -142,13 +146,17 @@ class BTSTStrategy:
         if candle2['close'] >= candle1['close']:
             return False, None
         
-        # Check location: Near upper Bollinger Band
+        # Check location: AT upper Bollinger Band (candle must touch or cross the band)
         if pd.isna(candle2['bb_upper']):
             return False, None
         
-        distance_from_upper = abs(candle2['close'] - candle2['bb_upper']) / candle2['close']
-        if distance_from_upper > self.bb_proximity:
-            # Not near upper band
+        # Candle 2 must touch or go above the upper band
+        if candle2['high'] < candle2['bb_upper']:
+            # Didn't touch the upper band
+            return False, None
+        
+        # Check volume: Candle 2 volume must be greater than Candle 1 volume
+        if candle2['volume'] <= candle1['volume']:
             return False, None
         
         # Valid sell setup found
