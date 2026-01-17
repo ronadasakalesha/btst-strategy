@@ -27,8 +27,8 @@ CRYPTO_SYMBOLS = ["BTCUSD", "ETHUSD"]
 # Equity Symbols - Will be loaded dynamically from token_loader.py
 EQUITY_SYMBOLS = []
 
-# Timeframes for BTST Strategy
-TIMEFRAMES = ["ONE_DAY", "ONE_HOUR", "FIFTEEN_MINUTE"]
+# Timeframes for BTST Strategy (15MIN and 1H only)
+TIMEFRAMES = ["ONE_HOUR", "FIFTEEN_MINUTE"]
 
 # BTST Strategy Parameters
 BB_PERIOD = 20              # Bollinger Bands period (20 SMA)
