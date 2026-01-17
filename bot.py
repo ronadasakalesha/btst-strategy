@@ -234,7 +234,7 @@ def main():
             logger.info(f"Starting Scan: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
             
             # --- Scan Crypto ---
-            logger.info("Scanning Crypto symbols...")
+            logger.info("Scanning Crypto...")
             for symbol in config.CRYPTO_SYMBOLS:
                 for timeframe in config.TIMEFRAMES:
                     scan_symbol(symbol, symbol, "DELTA", timeframe, delta_helper, strategy, notifier_crypto)
@@ -256,7 +256,7 @@ def main():
                         )
                         time.sleep(1)
             else:
-                logger.info("Angel Market closed.")
+                pass # Angel Market closed silently
                 
             logger.info("Scan completed.")
             

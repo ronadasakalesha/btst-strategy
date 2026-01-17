@@ -72,7 +72,7 @@ class DeltaApiHelper:
             cols = ['open', 'high', 'low', 'close', 'volume']
             df[cols] = df[cols].apply(pd.to_numeric)
             
-            logger.info(f"Fetched {len(df)} candles for {symbol} {timeframe}")
+            # logger.info(f"Fetched {len(df)} candles for {symbol} {timeframe}")
             
             return df[['date', 'open', 'high', 'low', 'close', 'volume']]
             
