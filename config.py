@@ -24,8 +24,15 @@ DELTA_API_SECRET = os.getenv("DELTA_API_SECRET")
 # Crypto Symbols (Delta Exchange)
 CRYPTO_SYMBOLS = ["BTCUSD", "ETHUSD"]
 
-# Equity Symbols - Will be loaded dynamically from token_loader.py
-EQUITY_SYMBOLS = []
+# Equity Symbols
+# Nifty 50 Token (Angel One)
+NIFTY_SYMBOL = {
+    "symbol": "NIFTY", 
+    "token": "99926000", 
+    "exchange": "NSE"
+}
+# FNO Stocks will be disabled, only using Nifty
+EQUITY_SYMBOLS = [NIFTY_SYMBOL]
 
 # Timeframes for BTST Strategy (15MIN and 1H only)
 TIMEFRAMES = ["ONE_HOUR", "FIFTEEN_MINUTE"]

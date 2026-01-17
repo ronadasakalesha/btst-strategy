@@ -240,39 +240,30 @@ def run_scan():
             time.sleep(1)  # Rate limiting
     
     
-    # Equity scanning disabled - only scanning crypto
-    # Uncomment below to enable FNO stock scanning
-    
-    # # Scan Equity Symbols (Angel One) - only during market hours
-    # if is_angel_market_open():
-    #     logger.info("Scanning Equity symbols...")
-    #     
-    #     # Load FNO tokens
-    #     try:
-    #         equity_symbols = load_fno_tokens()
-    #         logger.info(f"Loaded {len(equity_symbols)} equity symbols")
-    #     except Exception as e:
-    #         logger.error(f"Failed to load equity symbols: {e}")
-    #         equity_symbols = []
-    #     
-    #     for symbol_data in equity_symbols:
-    #         symbol = symbol_data['symbol']
-    #         token = symbol_data['token']
-    #         exchange = symbol_data['exchange']
-    #         
-    #         for timeframe in config.TIMEFRAMES:
-    #             scan_symbol(
-    #                 symbol=symbol,
-    #                 identifier=token,
-    #                 exchange=exchange,
-    #                 timeframe=timeframe,
-    #                 helper=angel_helper,
-    #                 strategy=strategy,
-    #                 notifier=notifier_equity
-    #             )
-    #             time.sleep(1)  # Rate limiting
-    # else:
-    #     logger.info("Angel One market closed - skipping equity symbols")
+    # Scan Equity Symbols (Angel One) - market hours only
+    # CURRENTLY CONFIG: Only Nifty 50 is in config.EQUITY_SYMBOLS
+    if is_angel_market_open():
+        logger.info("Scanning Equity symbols (Nifty)...")
+        
+        # Use symbols from config (Nifty Only) instead of loading all FNO
+        for symbol_data in config.EQUITY_SYMBOLS:
+            symbol = symbol_data['symbol']
+            token = symbol_data['token']
+            exchange = symbol_data['exchange']
+            
+            for timeframe in config.TIMEFRAMES:
+                scan_symbol(
+                    symbol=symbol,
+                    identifier=token,
+                    exchange=exchange,
+                    timeframe=timeframe,
+                    helper=angel_helper,
+                    strategy=strategy,
+                    notifier=notifier_equity
+                )
+                time.sleep(1)
+    else:
+        logger.info("Angel One market closed - skipping Nifty scan")
     
     logger.info("=" * 60)
     logger.info(f"Scan completed at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
