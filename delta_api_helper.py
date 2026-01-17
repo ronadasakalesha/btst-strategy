@@ -14,6 +14,7 @@ class DeltaApiHelper:
     def get_timeframe_code(self, timeframe):
         """Map bot timeframes to Delta resolution codes"""
         mapping = {
+            "FOUR_HOUR": "4h",
             "ONE_HOUR": "1h",
             "FIFTEEN_MINUTE": "15m",
             "FIVE_MINUTE": "5m",

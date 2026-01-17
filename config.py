@@ -34,8 +34,8 @@ NIFTY_SYMBOL = {
 # FNO Stocks will be disabled, only using Nifty
 EQUITY_SYMBOLS = [NIFTY_SYMBOL]
 
-# Timeframes for BTST Strategy (15MIN and 1H only)
-TIMEFRAMES = ["ONE_HOUR", "FIFTEEN_MINUTE"]
+# Timeframes for BTST Strategy
+TIMEFRAMES = ["ONE_DAY", "FOUR_HOUR", "ONE_HOUR", "FIFTEEN_MINUTE"]
 
 # BTST Strategy Parameters
 BB_PERIOD = 20              # Bollinger Bands period (20 SMA)

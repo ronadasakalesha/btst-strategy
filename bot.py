@@ -140,6 +140,8 @@ def scan_symbol(symbol, identifier, exchange, timeframe, helper, strategy, notif
         # Determine duration based on timeframe
         if timeframe == "ONE_DAY":
             duration_days = 60  # Need ~50 candles
+        elif timeframe == "FOUR_HOUR":
+            duration_days = 20
         elif timeframe == "ONE_HOUR":
             duration_days = 10
         else:  # FIFTEEN_MINUTE
