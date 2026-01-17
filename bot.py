@@ -178,40 +178,42 @@ def scan_symbol(symbol, identifier, exchange, timeframe, helper, strategy, notif
         return None
 
 
-def run_scan():
-    """Main scan function - scans all symbols across all timeframes"""
-    logger.info("=" * 60)
-    logger.info(f"Starting BTST scan at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    logger.info("=" * 60)
+def wait_for_next_candle():
+    """
+    Calculates time remaining until the next candle close (5-minute aligned)
+    and sleeps until then with a buffer.
+    """
+    now = datetime.now()
+    minutes = now.minute
+    seconds = now.second
     
-    # Initialize helpers
+    # Sync to 5-minute mark (covers 5m, 15m, 1h)
+    remainder = minutes % 5
+    minutes_to_wait = 5 - remainder
+    
+    # Calculate exact seconds to wait + 60s buffer
+    # ensuring data is available at the exchange
+    total_seconds_wait = (minutes_to_wait * 60) - seconds + 60
+    
+    logger.info(f"Adding 60s buffer... Waiting {total_seconds_wait/60:.2f} minutes for next candle...")
+    time.sleep(total_seconds_wait)
+
+
+def main():
+    """Main entry point with robust candle synchronization"""
+    logger.info("🚀 BTST Strategy Bot Starting...")
+    logger.info(f"Timeframes: {', '.join(config.TIMEFRAMES)}")
+    logger.info(f"Crypto symbols: {', '.join(config.CRYPTO_SYMBOLS)}")
+    
+    # Initialize helpers ONCE
     try:
-        # Angel One Helper
         angel_helper = SmartApiHelper(
-            config.API_KEY,
-            config.CLIENT_ID,
-            config.PASSWORD,
-            config.TOTP_KEY
+            config.API_KEY, config.CLIENT_ID, config.PASSWORD, config.TOTP_KEY
         )
+        delta_helper = DeltaApiHelper(config.DELTA_API_KEY, config.DELTA_API_SECRET)
+        notifier_crypto = TelegramNotifier(config.TELEGRAM_BOT_TOKEN_CRYPTO, config.TELEGRAM_CHAT_ID_CRYPTO)
+        notifier_equity = TelegramNotifier(config.TELEGRAM_BOT_TOKEN_EQUITY, config.TELEGRAM_CHAT_ID_EQUITY)
         
-        # Delta Exchange Helper
-        delta_helper = DeltaApiHelper(
-            config.DELTA_API_KEY,
-            config.DELTA_API_SECRET
-        )
-        
-        # Telegram Notifiers
-        notifier_crypto = TelegramNotifier(
-            config.TELEGRAM_BOT_TOKEN_CRYPTO,
-            config.TELEGRAM_CHAT_ID_CRYPTO
-        )
-        
-        notifier_equity = TelegramNotifier(
-            config.TELEGRAM_BOT_TOKEN_EQUITY,
-            config.TELEGRAM_CHAT_ID_EQUITY
-        )
-        
-        # BTST Strategy
         strategy = BTSTStrategy(
             bb_period=config.BB_PERIOD,
             bb_std_dev=config.BB_STD_DEV,
@@ -219,76 +221,53 @@ def run_scan():
             volume_multiplier=config.VOLUME_MULTIPLIER,
             bb_proximity=config.BB_PROXIMITY_THRESHOLD
         )
-        
     except Exception as e:
         logger.error(f"Failed to initialize helpers: {e}")
         return
-    
-    # Scan Crypto Symbols (Delta Exchange)
-    logger.info("Scanning Crypto symbols...")
-    for symbol in config.CRYPTO_SYMBOLS:
-        for timeframe in config.TIMEFRAMES:
-            scan_symbol(
-                symbol=symbol,
-                identifier=symbol,
-                exchange="DELTA",
-                timeframe=timeframe,
-                helper=delta_helper,
-                strategy=strategy,
-                notifier=notifier_crypto
-            )
-            time.sleep(1)  # Rate limiting
-    
-    
-    # Scan Equity Symbols (Angel One) - market hours only
-    # CURRENTLY CONFIG: Only Nifty 50 is in config.EQUITY_SYMBOLS
-    if is_angel_market_open():
-        logger.info("Scanning Equity symbols (Nifty)...")
-        
-        # Use symbols from config (Nifty Only) instead of loading all FNO
-        for symbol_data in config.EQUITY_SYMBOLS:
-            symbol = symbol_data['symbol']
-            token = symbol_data['token']
-            exchange = symbol_data['exchange']
-            
-            for timeframe in config.TIMEFRAMES:
-                scan_symbol(
-                    symbol=symbol,
-                    identifier=token,
-                    exchange=exchange,
-                    timeframe=timeframe,
-                    helper=angel_helper,
-                    strategy=strategy,
-                    notifier=notifier_equity
-                )
-                time.sleep(1)
-    else:
-        logger.info("Angel One market closed - skipping Nifty scan")
-    
-    logger.info("=" * 60)
-    logger.info(f"Scan completed at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    logger.info("=" * 60)
 
-
-def main():
-    """Main entry point"""
-    logger.info("🚀 BTST Strategy Bot Starting...")
-    logger.info(f"Scan interval: {config.SCAN_INTERVAL_MINUTES} minutes")
-    logger.info(f"Timeframes: {', '.join(config.TIMEFRAMES)}")
-    logger.info(f"Crypto symbols: {', '.join(config.CRYPTO_SYMBOLS)}")
-    
-    # Run initial scan
-    run_scan()
-    
-    # Schedule periodic scans
-    schedule.every(config.SCAN_INTERVAL_MINUTES).minutes.do(run_scan)
-    
-    logger.info(f"Scheduler started - scanning every {config.SCAN_INTERVAL_MINUTES} minutes")
-    
-    # Keep running
+    # Main Loop
     while True:
-        schedule.run_pending()
-        time.sleep(30)
+        try:
+            logger.info("=" * 60)
+            logger.info(f"Starting Scan: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            
+            # --- Scan Crypto ---
+            logger.info("Scanning Crypto symbols...")
+            for symbol in config.CRYPTO_SYMBOLS:
+                for timeframe in config.TIMEFRAMES:
+                    scan_symbol(symbol, symbol, "DELTA", timeframe, delta_helper, strategy, notifier_crypto)
+                    time.sleep(1)
+            
+            # --- Scan Equity (Nifty) ---
+            if is_angel_market_open():
+                logger.info("Scanning Equity (Nifty)...")
+                for symbol_data in config.EQUITY_SYMBOLS:
+                    for timeframe in config.TIMEFRAMES:
+                        scan_symbol(
+                            symbol_data['symbol'], 
+                            symbol_data['token'], 
+                            symbol_data['exchange'], 
+                            timeframe, 
+                            angel_helper, 
+                            strategy, 
+                            notifier_equity
+                        )
+                        time.sleep(1)
+            else:
+                logger.info("Angel Market closed.")
+                
+            logger.info("Scan completed.")
+            
+            # Wait for next candle with buffer
+            wait_for_next_candle()
+            
+        except KeyboardInterrupt:
+            logger.info("Bot stopped by user.")
+            break
+        except Exception as e:
+            logger.error(f"Unexpected error in main loop: {e}")
+            logger.info("Retrying in 60 seconds...")
+            time.sleep(60)
 
 
 if __name__ == "__main__":
