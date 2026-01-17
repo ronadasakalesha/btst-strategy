@@ -24,7 +24,7 @@ class DeltaApiHelper:
     def get_historical_data(self, symbol, exchange="DELTA", timeframe="FIVE_MINUTE", duration_days=5):
         """
         Fetches historical candle data from Delta Exchange India.
-        Returns DataFrame with columns: date, open, high, low, close, volume
+        (Logic aligned exactly with RSI Divergence Bot)
         """
         resolution = self.get_timeframe_code(timeframe)
         
@@ -35,10 +35,11 @@ class DeltaApiHelper:
         start_ts = int(start_dt.timestamp())
         end_ts = int(end_dt.timestamp())
         
+        # URL and Params (Exact match to RSI bot)
         url = f"{self.base_url}/v2/history/candles"
         params = {
             "resolution": resolution,
-            "symbol": symbol,  # e.g., BTCUSD, ETHUSD
+            "symbol": symbol,
             "start": start_ts,
             "end": end_ts
         }
@@ -63,7 +64,7 @@ class DeltaApiHelper:
             # Convert timestamp to datetime
             df['date'] = pd.to_datetime(df['time'], unit='s')
             
-            # Sort ascending (oldest first) for indicator calculation
+            # Sort ascending (oldest first)
             df = df.sort_values('date').reset_index(drop=True)
             
             # Ensure numeric types
