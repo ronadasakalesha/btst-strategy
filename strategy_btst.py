@@ -55,14 +55,16 @@ class BTSTStrategy:
           * Closes above Candle 1's close
         - Location: Near lower Bollinger Band
         
+        NOTE: Only analyzes CLOSED candles (excludes last candle which might be forming)
+        
         Returns: (is_valid, setup_data) or (False, None)
         """
-        if df is None or len(df) < 2:
+        if df is None or len(df) < 3:
             return False, None
         
-        # Get last two candles
-        candle1 = df.iloc[-2]
-        candle2 = df.iloc[-1]
+        # Get last two CLOSED candles (exclude the last one which might be forming)
+        candle1 = df.iloc[-3]
+        candle2 = df.iloc[-2]
         
         # Check Candle 1: Red candle
         if candle1['close'] >= candle1['open']:
@@ -113,14 +115,16 @@ class BTSTStrategy:
           * Closes below Candle 1's close
         - Location: Near upper Bollinger Band
         
+        NOTE: Only analyzes CLOSED candles (excludes last candle which might be forming)
+        
         Returns: (is_valid, setup_data) or (False, None)
         """
-        if df is None or len(df) < 2:
+        if df is None or len(df) < 3:
             return False, None
         
-        # Get last two candles
-        candle1 = df.iloc[-2]
-        candle2 = df.iloc[-1]
+        # Get last two CLOSED candles (exclude the last one which might be forming)
+        candle1 = df.iloc[-3]
+        candle2 = df.iloc[-2]
         
         # Check Candle 1: Green candle
         if candle1['close'] <= candle1['open']:
@@ -346,7 +350,8 @@ class BTSTStrategy:
         setup['rsi_divergence_msg'] = divergence_msg
         
         # Check Volume (enhanced version - calculate avg volume)
-        recent_volumes = df.tail(21)['volume'].iloc[:-1]  # Last 20 excluding current
+        # Exclude last candle (forming) and the reversal candle from average calculation
+        recent_volumes = df.tail(22)['volume'].iloc[:-2]  # Last 20 excluding reversal and forming candles
         avg_volume = recent_volumes.mean()
         current_volume = setup['reversal_candle']['volume']
         
@@ -376,8 +381,8 @@ class BTSTStrategy:
         targets = self.calculate_targets(setup, df)
         setup['targets'] = targets
         
-        # Add current price info
-        setup['current_price'] = df.iloc[-1]['close']
-        setup['current_rsi'] = df.iloc[-1]['rsi'] if 'rsi' in df.columns else None
+        # Add current price info (from last CLOSED candle, not forming candle)
+        setup['current_price'] = df.iloc[-2]['close']
+        setup['current_rsi'] = df.iloc[-2]['rsi'] if 'rsi' in df.columns else None
         
         return setup
