@@ -76,6 +76,14 @@ class TokenLoader:
             
         return fno_equity_tokens
 
+def load_fno_tokens(force_refresh=False):
+    """
+    Helper function to load FNO tokens.
+    Returns a list of dicts with symbol, token, and exchange.
+    """
+    loader = TokenLoader()
+    return loader.get_fno_equity_list(force_refresh=force_refresh)
+
 if __name__ == "__main__":
     loader = TokenLoader()
     tokens = loader.get_fno_equity_list()
