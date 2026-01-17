@@ -35,7 +35,7 @@ BB_PERIOD = 20              # Bollinger Bands period (20 SMA)
 BB_STD_DEV = 2              # Standard deviation multiplier
 RSI_PERIOD = 14             # RSI period for divergence detection
 VOLUME_MULTIPLIER = 1.5     # Volume must be 1.5x average for confirmation
-BB_PROXIMITY_THRESHOLD = 0.02  # 2% from band to be considered "near"
+BB_PROXIMITY_THRESHOLD = 0.05  # 5% from band to be considered "near" (relaxed from 2%)
 
 # Scan Interval (minutes)
 SCAN_INTERVAL_MINUTES = 15
