@@ -27,6 +27,10 @@ class TelegramNotifier:
                 logger.error(f"Failed to send alert: {response.status_code} - {response.text}")
         except Exception as e:
             logger.error(f"Telegram Exception during request: {e}", exc_info=True)
+    
+    def send_message(self, message):
+        """Alias for send_alert() for compatibility"""
+        return self.send_alert(message)
 
     def format_rep_signal(self, symbol, time, price, child_rsi, p1_rsi, p2_rsi):
         msg = f"*🔥 REP Strategy Signal 🔥*\n\n"
