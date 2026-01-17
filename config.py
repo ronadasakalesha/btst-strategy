@@ -22,7 +22,7 @@ DELTA_API_KEY = os.getenv("DELTA_API_KEY")
 DELTA_API_SECRET = os.getenv("DELTA_API_SECRET")
 
 # Crypto Symbols (Delta Exchange)
-CRYPTO_SYMBOLS = ["BTCUSD", "ETHUSD"]
+CRYPTO_SYMBOLS = ["BTCUSD", "ETHUSD", "XRPUSD"]
 
 # Equity Symbols
 # Nifty 50 Token (Angel One)
