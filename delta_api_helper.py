@@ -1,20 +1,18 @@
 
 import requests
 import pandas as pd
-import time
 from datetime import datetime, timedelta
 from logzero import logger
+
 
 class DeltaApiHelper:
     def __init__(self, api_key=None, api_secret=None):
         self.base_url = "https://api.india.delta.exchange"
         self.api_key = api_key
         self.api_secret = api_secret
-        # Public endpoints usually don't need auth for market data, 
-        # but good to have structure if we need private later.
 
     def get_timeframe_code(self, timeframe):
-        # Map bot timeframes to Delta resolution
+        """Map bot timeframes to Delta resolution codes"""
         mapping = {
             "ONE_HOUR": "1h",
             "FIFTEEN_MINUTE": "15m",
@@ -26,11 +24,11 @@ class DeltaApiHelper:
     def get_historical_data(self, symbol, exchange="DELTA", timeframe="FIVE_MINUTE", duration_days=5):
         """
         Fetches historical candle data from Delta Exchange India.
+        Returns DataFrame with columns: date, open, high, low, close, volume
         """
         resolution = self.get_timeframe_code(timeframe)
         
-        # Calculate start/end time
-        # Delta expects epoch timestamps (seconds)
+        # Calculate start/end timestamps
         end_dt = datetime.now()
         start_dt = end_dt - timedelta(days=duration_days)
         
@@ -40,51 +38,42 @@ class DeltaApiHelper:
         url = f"{self.base_url}/v2/history/candles"
         params = {
             "resolution": resolution,
-            "symbol": symbol, # e.g., BTCUSD
+            "symbol": symbol,  # e.g., BTCUSD, ETHUSD
             "start": start_ts,
             "end": end_ts
         }
         
         try:
             response = requests.get(url, params=params, timeout=10)
-            data = response.json()
             
             if response.status_code != 200:
-                logger.error(f"Delta API Error ({symbol}): {data}")
+                logger.error(f"Delta API Error ({symbol}): Status {response.status_code} - {response.text}")
                 return None
                 
-            if "result" not in data:
+            data = response.json()
+            if "result" not in data or not data["result"]:
+                logger.warning(f"No result data for {symbol} {timeframe}")
                 return None
             
             candles = data["result"]
-            if not candles:
-                return None
-                
+            
             # Delta returns: [timestamp, open, high, low, close, volume]
-            # Convert to DataFrame
             df = pd.DataFrame(candles, columns=["time", "open", "high", "low", "close", "volume"])
             
-            # Standardize columns to match SmartApiHelper
-            # 'time' is epoch in seconds
+            # Convert timestamp to datetime
             df['date'] = pd.to_datetime(df['time'], unit='s')
-            # Adjust timezone to IST? The bot seems to use local time or naive. 
-            # SmartApi returns string or datetime?
-            # SmartApiHelper usually returns 'date' as datetime object or string.
-            # Let's check SmartApiHelper implementation if needed. 
-            # For now, keeping as datetime.
             
-            # Sort by date ascending (Delta returns descending usually?)
+            # Sort ascending (oldest first) for indicator calculation
             df = df.sort_values('date').reset_index(drop=True)
             
-            # Ensure numeric
+            # Ensure numeric types
             cols = ['open', 'high', 'low', 'close', 'volume']
             df[cols] = df[cols].apply(pd.to_numeric)
             
-            # Drop unnecessary
-            df = df[['date', 'open', 'high', 'low', 'close', 'volume']]
+            logger.info(f"Fetched {len(df)} candles for {symbol} {timeframe}")
             
-            return df
+            return df[['date', 'open', 'high', 'low', 'close', 'volume']]
             
         except Exception as e:
-            logger.error(f"Delta Fetch Exception ({symbol}): {e}")
+            logger.error(f"Delta Fetch Exception ({symbol} {timeframe}): {e}")
             return None
