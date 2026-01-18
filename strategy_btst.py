@@ -92,8 +92,10 @@ class BTSTStrategy:
             return False, None
         
         # Check volume: Candle 2 volume must be greater than Candle 1 volume
-        if candle2['volume'] <= candle1['volume']:
-            return False, None
+        # RELAXED: Strict check removed to catch reversals after massive panic dumps
+        # We will instead rely on the 'volume_multiplier' check against average volume later
+        # if candle2['volume'] <= candle1['volume']:
+        #     return False, None
         
         # Valid buy setup found
         setup_data = {
@@ -156,8 +158,9 @@ class BTSTStrategy:
             return False, None
         
         # Check volume: Candle 2 volume must be greater than Candle 1 volume
-        if candle2['volume'] <= candle1['volume']:
-            return False, None
+        # RELAXED: Strict check removed
+        # if candle2['volume'] <= candle1['volume']:
+        #     return False, None
         
         # Valid sell setup found
         setup_data = {
