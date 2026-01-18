@@ -82,7 +82,16 @@ class BTSTStrategy:
         if candle2['close'] <= candle1['close']:
             return False, None
         
-        # Check location: AT lower Bollinger Band (candle must touch or cross the band)
+        
+        # Check location: Candle 1 must touch the lower Bollinger Band
+        if pd.isna(candle1['bb_lower']):
+             return False, None
+        
+        if candle1['low'] > candle1['bb_lower']:
+             # Candle 1 didn't touch the lower band
+             return False, None
+        
+        # Check location: Candle 2 must also touch or be near lower Bollinger Band
         if pd.isna(candle2['bb_lower']):
             return False, None
         
@@ -148,7 +157,16 @@ class BTSTStrategy:
         if candle2['close'] >= candle1['close']:
             return False, None
         
-        # Check location: AT upper Bollinger Band (candle must touch or cross the band)
+        
+        # Check location: Candle 1 must touch the upper Bollinger Band
+        if pd.isna(candle1['bb_upper']):
+             return False, None
+        
+        if candle1['high'] < candle1['bb_upper']:
+             # Candle 1 didn't touch the upper band
+             return False, None
+        
+        # Check location: Candle 2 must also touch or be near upper Bollinger Band
         if pd.isna(candle2['bb_upper']):
             return False, None
         
