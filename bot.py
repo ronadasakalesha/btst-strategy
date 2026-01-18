@@ -2,7 +2,7 @@ import time
 import schedule
 from logzero import logger
 import config
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from notifier import TelegramNotifier
 from smart_api_helper import SmartApiHelper
 from delta_api_helper import DeltaApiHelper
@@ -11,8 +11,32 @@ from token_loader import load_fno_tokens
 import pandas as pd
 
 
-# Alert tracking to prevent spam
-alert_history = {}
+import json
+import os
+
+# Alert history file
+ALERT_HISTORY_FILE = "alerts_history.json"
+
+def load_alert_history():
+    """Load alert history from file"""
+    if os.path.exists(ALERT_HISTORY_FILE):
+        try:
+            with open(ALERT_HISTORY_FILE, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Failed to load alert history: {e}")
+    return {}
+
+def save_alert_history():
+    """Save alert history to file"""
+    try:
+        with open(ALERT_HISTORY_FILE, 'w') as f:
+            json.dump(alert_history, f)
+    except Exception as e:
+        logger.error(f"Failed to save alert history: {e}")
+
+# Load history on startup
+alert_history = load_alert_history()
 
 
 def is_angel_market_open():
@@ -30,24 +54,28 @@ def is_angel_market_open():
     return market_open <= now <= market_close
 
 
-def should_send_alert(symbol, timeframe, setup_type):
+def should_send_alert(symbol, timeframe, setup_type, setup_time):
     """
-    Check if we should send an alert (deduplication)
+    Check if we should send an alert (deduplication based on candle time)
     Returns True if alert should be sent, False if it's a duplicate
     """
+    # Key now allows different setup types for same symbol/tf, but tracks unique TIME
     key = f"{symbol}_{timeframe}_{setup_type}"
-    current_time = datetime.now()
+    
+    # Convert timestamp to string for JSON serialization/comparison
+    setup_time_str = str(setup_time)
     
     if key in alert_history:
-        last_alert_time = alert_history[key]
-        time_diff = (current_time - last_alert_time).total_seconds() / 60
+        last_alert_time_str = alert_history[key]
         
-        if time_diff < config.ALERT_COOLDOWN_MINUTES:
-            logger.info(f"Skipping duplicate alert for {key} (sent {time_diff:.1f} min ago)")
+        # If we already alerted for this specific candle timestamp, skip
+        if last_alert_time_str == setup_time_str:
+            logger.info(f"Skipping duplicate alert for {key} (Time: {setup_time_str})")
             return False
     
-    # Update alert history
-    alert_history[key] = current_time
+    # Update alert history with new timestamp and save
+    alert_history[key] = setup_time_str
+    save_alert_history()
     return True
 
 
@@ -165,7 +193,10 @@ def scan_symbol(symbol, identifier, exchange, timeframe, helper, strategy, notif
             logger.info(f"✅ BTST {setup['type']} setup found: {symbol} {timeframe}")
             
             # Check if we should send alert (deduplication)
-            if should_send_alert(symbol, timeframe, setup['type']):
+            # Use 'reversal_candle' date/time as the unique identifier for this setup
+            setup_time = setup['reversal_candle']['date']
+            
+            if should_send_alert(symbol, timeframe, setup['type'], setup_time):
                 # Format and send alert
                 message = format_alert_message(symbol, timeframe, setup)
                 notifier.send_message(message)
